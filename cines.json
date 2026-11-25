@@ -1,0 +1,13 @@
+[
+  {"id": "E0344", "nombre": "Cines Estrella Ávila", "color": "#B03A2E", "web": "https://www.sensacine.com/cines/cine/E0344/", "zonas": ["Ávila"]},
+  {"id": "E0247", "nombre": "Cinesa Méndez Álvaro", "color": "#C0392B", "web": "https://www.cinesa.es", "zonas": ["Sur", "Casa"]},
+  {"id": "E0681", "nombre": "Yelmo Islazul", "color": "#2E86C1", "web": "https://cineyelmo.com/es", "zonas": ["Sur"]},
+  {"id": "E0399", "nombre": "Cinesa Parquesur", "color": "#D35400", "web": "https://www.cinesa.es", "zonas": ["Sur"]},
+  {"id": "E0877", "nombre": "Odeon Sambil (Leganés)", "color": "#117A65", "web": "https://www.sensacine.com/cines/cine/E0877/", "zonas": ["Sur"]},
+  {"id": "E0621", "nombre": "Yelmo Ideal", "color": "#7D6608", "web": "https://cineyelmo.com/es", "zonas": ["Centro"]},
+  {"id": "E0146", "nombre": "Cines Callao", "color": "#6C3483", "web": "https://www.sensacine.com/cines/cine/E0146/", "zonas": ["Centro"]},
+  {"id": "E0364", "nombre": "Cines Princesa (Renoir)", "color": "#1F618D", "web": "https://www.sensacine.com/cines/cine/E0364/", "zonas": ["Centro"]},
+  {"id": "E0475", "nombre": "Yelmo Plenilunio", "color": "#B8860B", "web": "https://cineyelmo.com/es", "zonas": ["Casa"], "taquilla": "https://www.taquilla.com/madrid/yelmo-cines-plenilunio-madrid"},
+  {"id": "E0646", "nombre": "Cinesa Manoteras", "color": "#8E3B8C", "web": "https://www.cinesa.es", "zonas": ["Casa"]},
+  {"id": "E0453", "nombre": "Kinépolis Madrid", "color": "#1E7F5C", "web": "https://kinepolis.es", "zonas": []}
+]

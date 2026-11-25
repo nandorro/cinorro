@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Cinorro</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column;
+         background: #12142B; color: #fff; font-family: system-ui, sans-serif; }
+  button, .boton { font: inherit; font-size: 13px; color: #fff; border: 0; border-radius: 8px; cursor: pointer;
+                   background: #3B4180; padding: 0 8px; min-height: 40px; text-decoration: none;
+                   display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+  #barra { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 8px; align-items: center; }
+  #fecha { flex: 1; min-width: 90px; background: none; font-size: 14px; font-weight: bold; white-space: normal; }
+  #cines { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
+  .cine { flex: 1 0 150px; min-height: 0; display: flex; flex-direction: column; padding-top: 1px; }
+  .cine[hidden] { display: none; }
+  .cine header { display: flex; gap: 6px; align-items: center; padding: 4px 6px 4px 10px; }
+  .cine h2 { flex: 1; margin: 0; font-size: 14px; min-width: 0; }
+  .cine header button, .cine header .boton { background: #0003; min-height: 32px; }
+  .lista { flex: 1; overflow-y: auto; padding: 8px; }
+  .aviso { color: #ccc; text-align: center; padding: 24px 8px; }
+  .nota { color: #999; font-size: 11px; margin: 0 4px 6px; }
+  .peli { display: block; background: #1E2140; border-radius: 10px; padding: 8px 12px; margin-bottom: 8px;
+          color: #fff; text-decoration: none; }
+  .peli b { font-size: 15px; }
+  .peli small { display: block; color: #999; }
+  .fila { font-size: 14px; margin-top: 4px; }
+  .fila span { color: #FECC00; margin-right: 10px; display: inline-block; }
+  .fila em { color: #9AA3FF; font-style: normal; margin-right: 8px; }
+  .fila .pasada { color: #888; text-decoration: line-through; }
+</style>
+</head>
+<body>
+<nav id="barra">
+  <button id="ayer">◀ Ayer</button>
+  <button id="fecha" title="Volver a hoy"></button>
+  <button id="manana">Mañana ▶</button>
+  <button id="zona"></button>
+  <a class="boton" href="https://www.abonoteatro.com/programacion" target="_blank" rel="noopener">Abono</a>
+</nav>
+<main id="cines"></main>
+<script>
+const ZONAS = ["Casa", "Ávila", "Sur", "Centro", "Todos"];
+const $ = id => document.getElementById(id);
+let cines = [], zona = "Casa", visibles = new Set(), desfase = 0;
+
+function el(tag, clase, texto) {
+  const e = document.createElement(tag);
+  if (clase) e.className = clase;
+  if (texto !== undefined) e.textContent = texto;
+  return e;
+}
+
+// Hora de Madrid como "AAAA-MM-DDTHH:MM", comparable con las sesiones
+const ahora = () => new Date().toLocaleString("sv-SE", { timeZone: "Europe/Madrid" }).slice(0, 16).replace(" ", "T");
+
+function diaElegido() {
+  const d = new Date(ahora().slice(0, 10) + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + desfase);
+  return d;
+}
+
+const deZona = z => new Set(cines.filter(c => z === "Todos" || c.zonas.includes(z)).map(c => c.id));
+
+function mostrar(ids) {
+  visibles = ids;
+  cines.forEach(c => c.panel.hidden = !visibles.has(c.id));
+  $("zona").textContent = "Zona: " + zona;
+  try { localStorage.setItem("cinorro", JSON.stringify({ zona, visibles: [...visibles] })); } catch {}
+}
+
+function crearPanel(c) {
+  const panel = el("section", "cine"), cab = el("header"), lista = el("div", "lista");
+  cab.style.background = c.color;
+  const agrandar = el("button", "", "Agrandar");
+  agrandar.onclick = () => mostrar(visibles.size === 1 && visibles.has(c.id) ? deZona(zona) : new Set([c.id]));
+  const ocultar = el("button", "", "Ocultar");
+  ocultar.onclick = () => { visibles.delete(c.id); mostrar(visibles); };
+  const web = el("a", "boton", "Web ↗");
+  web.href = c.web; web.target = "_blank"; web.rel = "noopener";
+  cab.append(el("h2", "", c.nombre), agrandar, ocultar, web);
+  panel.append(cab, lista);
+  $("cines").append(panel);
+  Object.assign(c, { panel, lista });
+}
+
+function pintar(c) {
+  const d = diaElegido(), clave = d.toISOString().slice(0, 10);
+  c.lista.replaceChildren();
+  const aviso = t => c.lista.append(el("div", "aviso", t));
+  if (c.fallo) return aviso("No se pudo cargar (¿sin conexión?)");
+  if (!c.datos) return aviso("Cargando…");
+  if (desfase < 0) return aviso("Las webs de carteleras no publican sesiones de días pasados.");
+  const dia = c.datos.dias[clave];
+  if (!dia || !dia.pelis.length) return aviso("Sin sesiones publicadas para este día.");
+  const act = c.datos.actualizado;
+  c.lista.append(el("p", "nota",
+    `Datos de ${dia.fuente}, actualizados el ${act.slice(8, 10)}/${act.slice(5, 7)} a las ${act.slice(11, 16)}`));
+  const ya = ahora();
+  for (const p of dia.pelis) {
+    const a = el("a", "peli");
+    a.href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(p.titulo + " tráiler oficial español");
+    a.target = "_blank"; a.rel = "noopener";
+    a.append(el("b", "", p.titulo));
+    if (p.duracion) a.append(el("small", "", p.duracion));
+    for (const v of new Set(p.sesiones.map(s => s.version))) {
+      const fila = el("div", "fila");
+      fila.append(el("em", "", v + ":"));
+      p.sesiones.filter(s => s.version === v).forEach(s =>
+        fila.append(el("span", s.inicio < ya ? "pasada" : "", s.inicio.slice(11, 16))));
+      a.append(fila);
+    }
+    c.lista.append(a);
+  }
+}
+
+function pintarTodo() {
+  const d = diaElegido();
+  $("fecha").textContent = d.toLocaleDateString("es-ES",
+    { weekday: "long", day: "numeric", month: "numeric", timeZone: "UTC" }) + (desfase === 0 ? " (hoy)" : "");
+  cines.forEach(pintar);
+}
+
+function descargar() {
+  cines.forEach(async c => {
+    try {
+      const r = await fetch(`data/${c.id}.json`, { cache: "no-cache" });
+      if (!r.ok) throw new Error(r.status);
+      c.datos = await r.json();
+      c.fallo = false;
+    } catch { c.fallo = !c.datos; }
+    pintar(c);
+  });
+}
+
+async function iniciar() {
+  cines = await (await fetch("cines.json", { cache: "no-cache" })).json();
+  cines.forEach(crearPanel);
+  let guardado = {};
+  try { guardado = JSON.parse(localStorage.getItem("cinorro")) || {}; } catch {}
+  if (ZONAS.includes(guardado.zona)) zona = guardado.zona;
+  mostrar(guardado.visibles?.length ? new Set(guardado.visibles) : deZona(zona));
+  $("ayer").onclick = () => { desfase--; pintarTodo(); };
+  $("manana").onclick = () => { desfase++; pintarTodo(); };
+  $("fecha").onclick = () => { desfase = 0; pintarTodo(); };
+  $("zona").onclick = () => { zona = ZONAS[(ZONAS.indexOf(zona) + 1) % ZONAS.length]; mostrar(deZona(zona)); };
+  pintarTodo();
+  descargar();
+  // al volver a la pestaña se refrescan datos y horas pasadas
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { pintarTodo(); descargar(); } });
+}
+iniciar();
+</script>
+</body>
+</html>
